@@ -1,14 +1,19 @@
 SHELL := /bin/bash
 
 REDIS_CHART_VERSION ?= 4.2.7
+export REDIS_CHART_VERSION
 
-CHART_DIRECTORY ?= ../planet4-helm-charts
+# Relative path to local chart bucket mirror
+CHART_DIRECTORY ?= ../raywalker-helm-charts
 
-CHART_BUCKET ?= gs://planet4-helm-charts
-CHART_URL ?= https://planet4-helm-charts.storage.googleapis.com
+# Remote chart bucket GCS bucket
+CHART_BUCKET ?= gs://raywalker-helm-charts
+CHART_URL ?= https://raywalker-helm-charts.storage.googleapis.com
 
+# Name of current chart
 CHART_NAME := $(shell basename "$(PWD)")
 
+# Sed match for replacing build tags with machine-readable characters
 SED_MATCH := [^a-zA-Z0-9._-]
 
 # If BUILD_TAG is not set
@@ -29,7 +34,7 @@ BUILD_TAG := testing
 endif
 
 .PHONY: all
-all: pull dep rewrite lint package index push
+all: clean rewrite lint dep pull package index push
 
 .PHONY: clean
 clean:
@@ -67,7 +72,6 @@ Chart.yaml:
 	envsubst < Chart.yaml.in > Chart.yaml
 
 requirements.yaml:
-	REDIS_CHART_VERSION=$(REDIS_CHART_VERSION) \
 	envsubst < requirements.yaml.in > requirements.yaml
 
 .PHONY: package
