@@ -68,6 +68,7 @@ spec:
               value: {{ template "redis.fullname" . }}-master
             {{- end }}
 
+            {{- if .Values.wp.stateless.enabled }}
             - name: WP_STATELESS_MEDIA_ENABLED
               value: {{ .Values.wp.stateless.enabled | quote }}
             - name: WP_STATELESS_MEDIA_BUCKET
@@ -79,6 +80,7 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-stateless"
                   key: credentials.json
+            {{- end }}
 
             - name: WP_DB_HOST
               value: "{{ .Values.dbHostname }}"
