@@ -1,0 +1,114 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "openresty.fullname" . }}
+  labels:
+    app: {{ .Release.Name }}-wordpress
+    chart: {{ template "wordpress.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    component: proxy
+spec:
+  replicas: {{ .Values.openresty.minReplicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      app: {{ template "openresty.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "openresty.name" . }}
+        release: {{ .Release.Name }}
+        component: proxy
+        environment: {{ .Values.environment }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.openresty.image.repository }}:{{ .Values.openresty.image.tag }}"
+          imagePullPolicy: {{ .Values.openresty.image.pullPolicy }}
+          env:
+          - name: APP_ENV
+            value: {{ .Values.environment | quote }}
+          - name: APP_HOSTNAME
+            value: {{ .Values.hostname | quote }}
+          - name: APP_HOSTPATH
+            value: {{ .Values.hostpath | default "" | quote }}
+          {{- if .Values.php.enabled }}
+          - name: PHP_ENABLED
+            value: "true"
+          - name: OPENRESTY_FASTCGI_BACKEND
+            value: "{{ template "php.fullname" . }}:9000"
+          {{- end }}
+
+          - name: PAGESPEED_ENABLED
+            value: {{ .Values.pagespeed.enabled | quote }}
+          - name: PAGESPEED_REDIS_SERVER
+            value: "{{ template "redis.fullname" . }}-master:6379"
+
+          - name: REDIS_FASTCGI_CACHE_ENABLED
+          {{- if .Values.fastcgi.redis.enabled }}
+            value: "true"
+          - name: REDIS_FASTCGI_CACHE_SERVER
+            value: "{{ template "redis.fullname" . }}-master:6379"
+          {{- else }}
+            value: "false"
+          {{- end }}
+          {{- if .Values.openresty.healthProbes.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /health_php.php
+              port: http
+            initialDelaySeconds: {{ .Values.openresty.healthProbes.livenessDelay }}
+            periodSeconds: {{ .Values.php.healthProbes.livenessPeriod }}
+          readinessProbe:
+            httpGet:
+              path: /health_php.php
+              port: http
+            initialDelaySeconds: {{ .Values.openresty.healthProbes.readinessDelay }}
+            periodSeconds: {{ .Values.openresty.healthProbes.readinessPeriod }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+{{ toYaml .Values.openresty.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: release
+                operator: NotIn
+                values:
+                - {{ .Release.Name }}
+              - key: component
+                operator: NotIn
+                values:
+                - proxy
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: release
+                operator: In
+                values:
+                - {{ .Release.Name }}
+              - key: component
+                operator: In
+                values:
+                - php
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

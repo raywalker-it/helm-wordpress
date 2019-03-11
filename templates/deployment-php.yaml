@@ -1,0 +1,194 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "php.fullname" . }}
+  labels:
+    app: {{ .Release.Name }}-wordpress
+    chart: {{ template "wordpress.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    component: php
+spec:
+  replicas: {{ .Values.php.minReplicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 15
+  selector:
+    matchLabels:
+      app: {{ template "php.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "php.name" . }}
+        release: {{ .Release.Name }}
+        component: php
+        environment: {{ .Values.environment }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.php.image.repository }}:{{ .Values.php.image.tag }}"
+          imagePullPolicy: {{ .Values.php.image.pullPolicy }}
+          env:
+            - name: APP_ENV
+              value: {{ .Values.environment | quote }}
+            - name: APP_HOSTNAME
+              value: {{ .Values.hostname | quote }}
+            - name: APP_HOSTPATH
+              value: {{ .Values.hostpath | quote }}
+            - name: WP_SITE_URL
+              value: {{ .Values.wp.siteUrl | quote }}
+            - name: WP_SITE_HOME
+              value: {{ .Values.wp.siteHome | default .Values.wp.siteurl | quote }}
+            - name: WP_SET_OPTIONS_ON_BOOT
+              value: {{ .Values.wp.setOptionsOnBoot | quote }}
+
+            {{- if .Values.newrelic.enabled }}
+            - name: NEWRELIC_ENABLED
+              value: "true"
+            - name: NEWRELIC_APPNAME
+              value: {{ .Values.newrelic.appname | quote }}
+            - name: NEWRELIC_LICENSE
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-newrelic"
+                  key: license
+            {{- end }}
+
+            - name: PHP_MEMORY_LIMIT
+              value: {{ .Values.php.memoryLimit | quote }}
+
+            {{- if .Values.wp.redis.enabled }}
+            - name: WP_REDIS_ENABLED
+              value: "true"
+            - name: WP_REDIS_HOST
+              value: {{ template "redis.fullname" . }}-master
+            {{- end }}
+
+            - name: WP_STATELESS_MEDIA_ENABLED
+              value: {{ .Values.wp.stateless.enabled | quote }}
+            - name: WP_STATELESS_MEDIA_BUCKET
+              value: {{ .Values.wp.stateless.bucket | quote }}
+            - name: WP_STATELESS_MEDIA_MODE
+              value: {{ .Values.wp.stateless.mode | quote }}
+            - name: WP_STATELESS_MEDIA_JSON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-stateless"
+                  key: credentials.json
+
+            {{- if .Values.sqlproxy.enabled }}
+            - name: WP_DB_HOST
+              value: "{{ .Release.Name }}-sqlproxy"
+            - name: MYSQL_DATABASE
+              value: "{{ .Values.dbDatabase }}"
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-db"
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-db"
+                  key: password
+            {{- end }}
+
+            - name: SSMTP_MAIL_RELAY
+              value: {{ template "exim.fullname" . }}
+
+            - name: WP_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-keysalt"
+                  key: authKey
+            - name: WP_AUTH_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-keysalt"
+                  key: authSalt
+            - name: WP_LOGGED_IN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-keysalt"
+                  key: loggedInKey
+            - name: WP_LOGGED_IN_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-keysalt"
+                  key: loggedInSalt
+            - name: WP_NONCE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-keysalt"
+                  key: nonceKey
+            - name: WP_NONCE_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-keysalt"
+                  key: nonceSalt
+            - name: WP_SECURE_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-keysalt"
+                  key: secureAuthKey
+            - name: WP_SECURE_AUTH_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-keysalt"
+                  key: secureAuthSalt
+
+          ports:
+            - name: fastcgi
+              containerPort: {{ .Values.php.service.port }}
+              protocol: TCP
+          {{- if .Values.php.healthProbes.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.php.service.port }}
+            initialDelaySeconds: {{ .Values.php.healthProbes.readinessDelay }}
+            periodSeconds: {{ .Values.php.healthProbes.readinessPeriod }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.php.service.port }}
+            initialDelaySeconds: {{ .Values.php.healthProbes.livenessDelay }}
+            periodSeconds: {{ .Values.php.healthProbes.livenessPeriod }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.php.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 2
+            preference:
+              matchExpressions:
+              - key: release
+                operator: NotIn
+                values:
+                - {{ .Release.Name }}
+              - key: component
+                operator: NotIn
+                values:
+                - php
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: release
+                operator: In
+                values:
+                - {{ .Release.Name }}
+              - key: component
+                operator: In
+                values:
+                - proxy
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
