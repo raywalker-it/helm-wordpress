@@ -150,7 +150,7 @@ redis:
 ingress:
   enabled: true
   annotations:
-    kubernetes.io/ingress.class: traefik
+    kubernetes.io/ingress.class: nginx
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
