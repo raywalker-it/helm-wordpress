@@ -1,42 +1,24 @@
 ---
 defaults: &defaults
   environment:
-    GOOGLE_PROJECT_ID: planet-4-151612
+    GOOGLE_PROJECT_ID: cedar-hawk-222400
   docker:
     - image: gcr.io/planet-4-151612/circleci-base:latest
-  working_directory: /home/circleci/wordpress
+  working_directory: /home/circleci/app
 
 version: 2
 
 jobs:
-  lint:
-    <<: *defaults
-    steps:
-      - setup_remote_docker
-      - checkout
-      - run: make lint
-      - run:
-          name: Notify failure
-          when: on_fail
-          command: TYPE="Lint" notify-job-failure.sh
-  # notify:
-  #   <<: *defaults
-  #   steps:
-  #     - run: TYPE="@rawalker Promotion" notify-job-hold.sh
   release:
     <<: *defaults
     steps:
-      - attach_workspace:
-          at: /tmp/workspace
       - checkout
       - run:
           name: Release
           command: |
             new_version="$(git-new-version.sh)"
-            echo "Promoting branch ${CIRCLE_BRANCH} to ${new_version}"
-            set -x
-            BUILD_TAG="${new_version#v}" make clean rewrite
-            git config --global user.email "ci@greenpeace.org"
+            BUILD_TAG="${new_version#v}" make clean lint
+            git config --global user.email "hello@raywalker.it"
             git config --global user.name "${CIRCLE_USERNAME}"
             git add -f Chart.yaml
             git add -f requirements.yaml
@@ -64,38 +46,16 @@ workflows:
   version: 2
   branch:
     jobs:
-      - lint:
-          context: org-global
+      - release:
+          context: raywalker-it-common
           filters:
             branches:
               ignore: master
-      # - hold:
-      #     type: approval
-      #     requires:
-      #       - lint
-      #     filters:
-      #       branches:
-      #         only: develop
-      # - notify:
-      #     context: org-global
-      #     requires:
-      #       - lint
-      #     filters:
-      #       branches:
-      #         only: develop
-      - release:
-          context: org-global
-          requires:
-            # - hold
-            - lint
-          filters:
-            branches:
-              only: develop
 
   tag:
     jobs:
       - package:
-          context: org-global
+          context: raywalker-it-common
           filters:
             branches:
               ignore: /.*/
