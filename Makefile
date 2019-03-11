@@ -32,7 +32,6 @@ BUILD_TAG := $(shell echo $(BUILD_TAG) | sed 's/^v//')
 
 # If BUILD_TAG is blank there's no tag on this commit
 ifeq ($(strip $(BUILD_TAG)),)
-# Default to branch name - this will lint but not package
 BUILD_TAG := testing
 endif
 
@@ -76,6 +75,9 @@ requirements.yaml:
 
 .PHONY: package
 package: lint Chart.yaml
+ifndef CI
+	$(error This helm chart repository should only be run in CI)
+endif
 	@[[ $(BUILD_TAG) =~ ^[0-9]+\.[0-9]+ ]] || { \
 	 >&2 echo "ERROR: Refusing to package non-semver release: '$(BUILD_TAG)')" && \
 	 exit 1; \
