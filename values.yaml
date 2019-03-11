@@ -30,6 +30,7 @@ dbUsername: testing
 # Pass in from environment
 # dbPassword: testing
 dbDatabase: wordpress_db
+dbPrefix: wp_
 
 php:
   enabled: true

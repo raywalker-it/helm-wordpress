@@ -82,6 +82,8 @@ spec:
 
             - name: WP_DB_HOST
               value: "{{ .Values.dbHostname }}"
+            - name: WP_DB_PREFIX
+              value: "{{ .Values.dbPrefix }}"
             - name: MYSQL_DATABASE
               value: "{{ .Values.dbDatabase }}"
             - name: MYSQL_USER
