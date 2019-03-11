@@ -33,8 +33,10 @@ ifeq ($(strip $(BUILD_TAG)),)
 BUILD_TAG := testing
 endif
 
+export BUILD_TAG
+
 .PHONY: all
-all: clean rewrite lint dep pull package index push
+all: clean lint dep pull package index push
 
 .PHONY: clean
 clean:
@@ -51,6 +53,7 @@ lint-yaml: Chart.yaml requirements.yaml
 	yamllint requirements.yaml
 
 .PHONY: lint-helm
+lint-helm: Chart.yaml requirements.yaml
 	@helm lint .
 
 .PHONY: dep
@@ -60,15 +63,9 @@ dep: lint
 .PHONY: pull
 pull:
 	@mkdir -p $(CHART_DIRECTORY)
-	@pushd $(CHART_DIRECTORY) > /dev/null && \
-	gsutil -m rsync -d $(CHART_BUCKET) . && \
-	popd > /dev/null
-
-.PHONY: rewrite rewrite-chart rewrite-requirements
-rewrite: Chart.yaml requirements.yaml
+	gsutil -m rsync -d $(CHART_BUCKET) $(CHART_DIRECTORY)
 
 Chart.yaml:
-	BUILD_TAG=$(BUILD_TAG) \
 	envsubst < Chart.yaml.in > Chart.yaml
 
 requirements.yaml:
@@ -76,9 +73,8 @@ requirements.yaml:
 
 .PHONY: package
 package: lint Chart.yaml
-	[[ $(BUILD_TAG) =~ ^[0-9]+\.[0-9]+ ]] || { \
-		>&2 echo "ERROR: Refusing to package non-semver release: '$(BUILD_TAG)'"; \
-		exit 1; \
+	@[[ $(BUILD_TAG) =~ ^[0-9]+\.[0-9]+ ]] || { \
+		$(error ERROR: Refusing to package non-semver release: '$(BUILD_TAG)') \
 	}
 	@helm package .
 	@mv $(CHART_NAME)-*.tgz $(CHART_DIRECTORY)
@@ -89,12 +85,8 @@ verify: lint
 
 .PHONY: index
 index: lint
-	@pushd $(CHART_DIRECTORY) > /dev/null && \
-	helm repo index . --url $(CHART_URL) && \
-	popd > /dev/null
+	helm repo index $(CHART_DIRECTORY) --url $(CHART_URL)
 
 .PHONY: push
 push: package
-	@pushd $(CHART_DIRECTORY) > /dev/null && \
-	gsutil -m rsync -d . $(CHART_BUCKET) && \
-	popd > /dev/null
+	gsutil -m rsync -d $(CHART_DIRECTORY) $(CHART_BUCKET)
