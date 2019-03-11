@@ -26,10 +26,11 @@ wp:
     bucket:
     serviceAccountKey:
 
-dbUsername: testing
+dbHostname: mysql.db
 # Pass in from environment
+dbUsername: wordpress
 # dbPassword: testing
-dbDatabase: wordpress_db
+dbDatabase: wordpress_default
 dbPrefix: wp_
 
 php:
@@ -106,8 +107,8 @@ exim:
   # password:
 
 newrelic:
-  enabled: true
-  appname: Planet 4 Wordpress
+  enabled: false
+  appname: Wordpress
   # license:
 
 redis:
