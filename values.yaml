@@ -19,9 +19,6 @@ wp:
     enabled: true
   secureAuthKey: ""
   secureAuthSalt: ""
-  setOptionsOnBoot: false
-  siteHome: ""
-  siteUrl: k8s.p4.greenpeace.org
   stateless:
     enabled: true
     mode: stateless
@@ -37,13 +34,13 @@ dbDatabase: wordpress_db
 php:
   enabled: true
   image:
-    repository: gcr.io/planet-4-151612/planet4-base-app
+    repository: gcr.io/planet-4-151612/wordpress
     tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   service:
     type: ClusterIP
     port: 9000
-  memoryLimit: 384M
+  memoryLimit: 256M
   healthProbes:
     enabled: true
     livenessDelay: 10
@@ -51,20 +48,20 @@ php:
     readinessDelay: 10
     readinessPeriod: 10
   minReplicaCount: 1
-  maxReplicaCount: 5
+  maxReplicaCount: 3
   resources:
     requests:
-      memory: "192Mi"
+      memory: "128Mi"
       cpu: "50m"
     limits:
-      memory: "768Mi"
-      cpu: "2"
+      memory: "512Mi"
+      cpu: "1"
 
 openresty:
   image:
-    repository: gcr.io/planet-4-151612/planet4-base-openresty
+    repository: gcr.io/planet-4-151612/openresty
     tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   fastcgi:
     redis: true
   service:
@@ -77,16 +74,17 @@ openresty:
     readinessDelay: 10
     readinessPeriod: 10
   minReplicaCount: 1
-  maxReplicaCount: 5
+  maxReplicaCount: 2
   resources:
     requests:
       memory: "64Mi"
       cpu: "50m"
     limits:
-      memory: "256Mi"
-      cpu: "2"
+      memory: "192Mi"
+      cpu: "1"
 
 exim:
+  enabled: false
   smarthost: "smtp.sendgrid.net::2525"
   mailFrom: "raywalker.it"
   image:
