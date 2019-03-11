@@ -2,4 +2,4 @@
 apiVersion: v1
 description: raywalker.it Wordpress stack
 name: wordpress
-version: 0.0.2
+version: 0.0.3
