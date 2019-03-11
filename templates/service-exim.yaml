@@ -1,3 +1,4 @@
+{{- if .Values.exim.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -17,3 +18,4 @@ spec:
   selector:
     app: {{ template "exim.name" . }}
     release: {{ .Release.Name }}
+{{- end }}
