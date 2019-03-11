@@ -20,7 +20,7 @@ wp:
   secureAuthKey: ""
   secureAuthSalt: ""
   stateless:
-    enabled: true
+    enabled: false
     mode: stateless
     # Pass in from environment
     bucket:
