@@ -1,6 +1,5 @@
 SHELL := /bin/bash
 
-GCLOUD_CHART_VERSION ?= 0.6.0
 REDIS_CHART_VERSION ?= 4.2.7
 
 CHART_DIRECTORY ?= ../planet4-helm-charts
@@ -68,7 +67,6 @@ Chart.yaml:
 	envsubst < Chart.yaml.in > Chart.yaml
 
 requirements.yaml:
-	GCLOUD_CHART_VERSION=$(GCLOUD_CHART_VERSION) \
 	REDIS_CHART_VERSION=$(REDIS_CHART_VERSION) \
 	envsubst < requirements.yaml.in > requirements.yaml
 
