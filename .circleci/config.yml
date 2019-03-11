@@ -4,7 +4,7 @@ defaults: &defaults
     GOOGLE_PROJECT_ID: cedar-hawk-222400
   docker:
     - image: gcr.io/planet-4-151612/circleci-base:latest
-  working_directory: /home/circleci/app
+  working_directory: /home/circleci/wordpress
 
 version: 2
 
