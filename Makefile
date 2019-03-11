@@ -27,6 +27,9 @@ BUILD_TAG ?= $(shell git tag -l --points-at HEAD | tail -n1 | sed 's/$(SED_MATCH
 endif
 endif
 
+# Trim any leading v from semver string
+BUILD_TAG := $(shell echo $(BUILD_TAG) | sed 's/^v//')
+
 # If BUILD_TAG is blank there's no tag on this commit
 ifeq ($(strip $(BUILD_TAG)),)
 # Default to branch name - this will lint but not package
@@ -74,7 +77,8 @@ requirements.yaml:
 .PHONY: package
 package: lint Chart.yaml
 	@[[ $(BUILD_TAG) =~ ^[0-9]+\.[0-9]+ ]] || { \
-		$(error ERROR: Refusing to package non-semver release: '$(BUILD_TAG)') \
+	 >&2 echo "ERROR: Refusing to package non-semver release: '$(BUILD_TAG)')" && \
+	 exit 1; \
 	}
 	@helm package .
 	@mv $(CHART_NAME)-*.tgz $(CHART_DIRECTORY)
