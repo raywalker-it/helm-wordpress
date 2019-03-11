@@ -20,16 +20,18 @@ wp:
   secureAuthKey: ""
   secureAuthSalt: ""
   stateless:
-    enabled: true
+    enabled: false
     mode: stateless
     # Pass in from environment
     bucket:
     serviceAccountKey:
 
-dbUsername: testing
+dbHostname: mysql.db
 # Pass in from environment
+dbUsername: wordpress
 # dbPassword: testing
-dbDatabase: wordpress_db
+dbDatabase: wordpress_default
+dbPrefix: wp_
 
 php:
   enabled: true
@@ -105,8 +107,8 @@ exim:
   # password:
 
 newrelic:
-  enabled: true
-  appname: Planet 4 Wordpress
+  enabled: false
+  appname: Wordpress
   # license:
 
 redis:
@@ -149,17 +151,11 @@ redis:
 ingress:
   enabled: true
   annotations:
-    kubernetes.io/ingress.class: traefik
+    kubernetes.io/ingress.class: nginx
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
-
-ingressProduction:
-  enabled: true
-  annotations:
-    kubernetes.io/ingress.class: traefik
-  tls: []
 
 fastcgi:
   backend: false
@@ -170,22 +166,6 @@ pagespeed:
   redis:
     enabled: false
   enabled: false
-
-sqlproxy:
-  enabled: true
-  resources:
-    requests:
-      cpu: 10m
-      memory: 64Mi
-    limits:
-      memory: 150Mi
-      cpu: 150m
-  cloudsql:
-    instances:
-      #- instance: db-instance-name
-      #  project: gcp-project
-      #  region: us-central1
-      #  port: 3306
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

@@ -68,6 +68,7 @@ spec:
               value: {{ template "redis.fullname" . }}-master
             {{- end }}
 
+            {{- if .Values.wp.stateless.enabled }}
             - name: WP_STATELESS_MEDIA_ENABLED
               value: {{ .Values.wp.stateless.enabled | quote }}
             - name: WP_STATELESS_MEDIA_BUCKET
@@ -79,10 +80,12 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-stateless"
                   key: credentials.json
+            {{- end }}
 
-            {{- if .Values.sqlproxy.enabled }}
             - name: WP_DB_HOST
-              value: "{{ .Release.Name }}-sqlproxy"
+              value: "{{ .Values.dbHostname }}"
+            - name: WP_DB_PREFIX
+              value: "{{ .Values.dbPrefix }}"
             - name: MYSQL_DATABASE
               value: "{{ .Values.dbDatabase }}"
             - name: MYSQL_USER
@@ -95,7 +98,6 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-db"
                   key: password
-            {{- end }}
 
             - name: SSMTP_MAIL_RELAY
               value: {{ template "exim.fullname" . }}
