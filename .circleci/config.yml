@@ -26,10 +26,6 @@ jobs:
             git push origin develop
             release-start.sh $new_version
             release-finish.sh $new_version
-      - run:
-          name: Notify failure
-          when: on_fail
-          command: TYPE="Release" notify-job-failure.sh
   package:
     <<: *defaults
     steps:
