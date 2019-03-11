@@ -156,12 +156,6 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-ingressProduction:
-  enabled: true
-  annotations:
-    kubernetes.io/ingress.class: traefik
-  tls: []
-
 fastcgi:
   backend: false
   redis:
