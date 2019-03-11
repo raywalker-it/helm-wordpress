@@ -80,9 +80,8 @@ spec:
                   name: "{{ .Release.Name }}-stateless"
                   key: credentials.json
 
-            {{- if .Values.sqlproxy.enabled }}
             - name: WP_DB_HOST
-              value: "{{ .Release.Name }}-sqlproxy"
+              value: "{{ .Values.dbHostname }}"
             - name: MYSQL_DATABASE
               value: "{{ .Values.dbDatabase }}"
             - name: MYSQL_USER
@@ -95,7 +94,6 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-db"
                   key: password
-            {{- end }}
 
             - name: SSMTP_MAIL_RELAY
               value: {{ template "exim.fullname" . }}
